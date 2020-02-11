@@ -1,0 +1,2 @@
+# gnb_udp_over_tcp
+gnb_udp_over_tcp 是一个为GNB开发的通过tcp链路中转UDP分组转发的服务
