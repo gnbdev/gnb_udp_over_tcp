@@ -1,6 +1,8 @@
 # gnb_udp_over_tcp
 [GNB](https://github.com/gnbdev/gnb "GNB")是一个开源的去中心化的具有极致内网穿透能力的通过P2P进行三层网络交换的VPN。
+
 GNB节点间通过UDP协议传输数据，在一些网络环境下的路由器/防火墙会对UDP分组实施QOS策略，因此通过tcp链路转发GNB数据是不需要改动GNB通讯协议又可以提升GNB网络适应能力的一个办法。
+
 gnb_udp_over_tcp 是一个为GNB开发的通过tcp链路中转UDP分组转发的服务。
 
 gnb_udp_over_tcp可以为其他基于UDP协议的服务中转数据。
