@@ -1,5 +1,5 @@
-#ifndef gnb_hash_h
-#define gnb_hash_h
+#ifndef gnb_hash32_h
+#define gnb_hash32_h
 
 
 #include <stdint.h>
@@ -57,6 +57,7 @@ gnb_kv32_t** gnb_hash32_array(gnb_hash32_map_t *hash32_map, uint32_t *num);
 #define GNB_HASH32_UINT32_SET(hash32_map,uint32key,value) gnb_hash32_put(hash32_map,(u_char *)&uint32key,sizeof(uint32_t),value,0)
 #define GNB_HASH32_UINT32_STORE(hash32_map,uint32key,value,value_len) gnb_hash32_store(hash32_map,(u_char *)&uint32key,sizeof(uint32_t),value,value_len)
 #define GNB_HASH32_UINT32_GET(hash32_map,uint32key) gnb_hash32_get(hash32_map,(u_char *)&uint32key,sizeof(uint32_t))
+
 #define GNB_HASH32_UINT32_GET_PTR(hash32_map,uint32key) GNB_HASH32_VALUE_PTR(gnb_hash32_get(hash32_map,(u_char *)&uint32key,sizeof(uint32_t)))
 #define GNB_HASH32_UINT32_DEL(hash32_map,uint32key) gnb_hash32_del(hash32_map,(u_char *)&uint32key,sizeof(uint32_t))
 uint32_t* gnb_hash32_uint32_keys(gnb_hash32_map_t *hash32_map, uint32_t *num);
@@ -90,8 +91,8 @@ u_char** gnb_hash32_string_keys(gnb_hash32_map_t *hash32_map, uint32_t *num);
 #define GNB_HASH32_KEY_SIZE(kv32)     (kv32->key->size)
 #define GNB_HASH32_VALUE_SIZE(kv32)   (kv32->value->size)
 
-#define GNB_HASH32_KEY_PTR(kv32)     (*(void **)&kv32->key->data)
-#define GNB_HASH32_VALUE_PTR(kv32)   (*(void **)&kv32->value->data)
+#define GNB_HASH32_KEY_PTR(kv32)     kv32!=NULL?(*(void **)&kv32->key->data):NULL
+#define GNB_HASH32_VALUE_PTR(kv32)   kv32!=NULL?(*(void **)&kv32->value->data):NULL
 
 #define GNB_HASH32_VALUE(kv) kv!=NULL?kv->value:NULL
 #define GNB_HASH32_GET_VALUE(hash32_map,key,key_len)    GNB_HASH32_VALUE( gnb_hash32_get(hash32_map,key,key_len) )
