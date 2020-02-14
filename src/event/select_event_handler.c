@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "gnb_platform.h"
+
+
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -9,11 +12,9 @@
 
 #include <unistd.h>
 
-
 #ifdef __UNIX_LIKE_OS__
 #include <sys/select.h>
 #endif
-
 
 #include <errno.h>
 
@@ -29,7 +30,6 @@ typedef struct _select_handler_ctx_t{
 	gnb_event_array_t *event_array;
 
 }select_handler_ctx_t;
-
 
 
 static int init_event(gnb_event_cmd *event_cmd, size_t max_event) {
