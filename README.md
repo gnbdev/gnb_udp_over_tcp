@@ -71,3 +71,6 @@ address.conf中不要配置 i 类型的GNB节点
 ./gnb_udp_over_tcp -u -l 5001 192.168.1.11 6000
 ```
 启动本地的GNB节点后 ping 10.1.0.25 检验是否能够ping通。
+
+---
+[免责声明](docs/disclaimer.md)
