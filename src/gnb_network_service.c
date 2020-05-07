@@ -418,15 +418,16 @@ handle_error:
         	return 0;
 
         default:
-
             event->ev_type |= GNB_EVENT_TYPE_ERROR;
-            break;
+            goto recv_callback;
 
     }
 
 finish:
 
 	conn->recv_zbuf->las = conn->recv_zbuf->pos + rlen;
+
+recv_callback:
 
 	service->recv_cb(service,conn);
 
