@@ -8,6 +8,21 @@ gnb_udp_over_tcp 是一个为GNB开发的通过tcp链路中转UDP分组转发的
 gnb_udp_over_tcp可以为其他基于UDP协议的服务中转数据。
 
 # 用nc作本地测试演示
+```
+[netcat]                          (nc -u 127.0.0.1 5001)
+    |
+   udp
+    |
+[udp_over_tcp udp:127.0.0.1:5001] (./gnb_udp_over_tcp -u -l 5001 127.0.0.1 6000)
+    |
+   tcp
+    |
+[udp_over_tcp tcp:127.0.0.1:6000] (./gnb_udp_over_tcp -t -l 6000 127.0.0.1 7000)
+    |
+   udp
+    |
+[netcat udp:127.0.0.1:7000]       (nc -u -l 7000)
+```
 
 ## Step1
 用 nc 监听 7000 udp 端口
@@ -46,9 +61,22 @@ GNB UDP 端口 9025
 GNB TUN ip 10.1.0.25
 远端 GNB 配置文件不需要调整
 
-
 中继服务器 ip地址为 192.168.1.11
-
+```
+[gnb_1010]
+    |
+   udp 
+    |
+[udp_over_tcp udp:127.0.0.1:5001]    (./gnb_udp_over_tcp -u -l 5001 192.168.1.11 6000)
+    |
+   tcp
+    |
+[udp_over_tcp tcp:192.168.1.11:6000] (./gnb_udp_over_tcp -t -l 6000 192.168.1.25 9025)
+    |
+   udp 
+    |
+[gnb_1025  udp:192.168.1.25:9025]
+```
 
 在 192.168.1.11 上执行
 ```sh
