@@ -14,6 +14,9 @@
 
 #include "gnb_address_type.h"
 
+#include "gnb_log_type.h"
+
+
 typedef struct _gnb_connection_t{
 
 	int fd;
@@ -93,7 +96,9 @@ typedef struct _gnb_service_socket_array_t{
 typedef struct _gnb_network_service_t{
 
     gnb_heap_t *heap;
-    
+
+    gnb_log_ctx_t *log;
+
     gnb_fixed_pool_t *event_fixed_pool;
     
 	size_t recv_zbuf_size;
@@ -141,7 +146,6 @@ typedef struct _gnb_network_service_t{
 	uint64_t now_time_sec;
 	uint64_t now_time_usec;
 
-
 	void *ctx;
 
 	void *service_conf;
@@ -150,7 +154,7 @@ typedef struct _gnb_network_service_t{
 
 
 
-gnb_network_service_t* gnb_network_service_create(gnb_network_service_t *service_mod, size_t max_event);
+gnb_network_service_t* gnb_network_service_create(gnb_network_service_t *service_mod, gnb_log_ctx_t *log, size_t max_event);
 
 int gnb_network_service_init(gnb_network_service_t *service, void *service_conf);
 
@@ -180,8 +184,12 @@ int gnb_network_service_udp_channel(gnb_network_service_t *service, gnb_connecti
 
 int gnb_network_service_udp_send(gnb_network_service_t *service, gnb_connection_t *conn);
 
+
+#define GNB_EVENT_PAYLOAD_TYPE_UDPLOG    0x45
+
+
+#define GNB_LOG_ID_EVENT_CORE          0
+
+
 #endif
-
-
-
 

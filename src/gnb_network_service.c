@@ -19,9 +19,11 @@
 
 #include "gnb_platform.h"
 #include "gnb_network_service.h"
+#include "gnb_address.h"
+#include "gnb_log.h"
+
 
 static int do_close(gnb_network_service_t *service, gnb_event_t *event);
-
 
 
 static void sync_time(gnb_network_service_t *service){
@@ -83,13 +85,15 @@ void gnb_connection_close(gnb_network_service_t *service, gnb_connection_t *conn
 		gnb_heap_free(service->heap,conn->send_zbuf);
 	}
 
+	GNB_STD1(service->log, GNB_LOG_ID_EVENT_CORE, "close connect %s\n", GNB_SOCKETADDRSTR1(&conn->remote_sockaddress));
+
     gnb_heap_free(service->heap,conn);
 
 }
 
 
 
-gnb_network_service_t* gnb_network_service_create(gnb_network_service_t *service_mod, size_t max_event){
+gnb_network_service_t* gnb_network_service_create(gnb_network_service_t *service_mod, gnb_log_ctx_t *log, size_t max_event){
 
 #ifdef _WIN32
 	WSADATA wsaData;
@@ -104,8 +108,10 @@ gnb_network_service_t* gnb_network_service_create(gnb_network_service_t *service
 	memset(service, 0, sizeof(gnb_network_service_t));
 
 	memcpy(service, service_mod, sizeof(gnb_network_service_t));
-    
+
     service->heap = heap;
+
+    service->log = log;
 
     service->event_fixed_pool = gnb_fixed_pool_create(service->heap, max_event, sizeof(gnb_event_t));
     
@@ -147,7 +153,7 @@ int gnb_network_service_listen(gnb_network_service_t *service){
 
 	service->listen_cb(service);
 
-	int ret;
+	int rc;
 
 	int i;
 
@@ -165,16 +171,23 @@ int gnb_network_service_listen(gnb_network_service_t *service){
 	    setsockopt( service->socket_array->svr_socket[i].conn.fd, SOL_SOCKET, SO_REUSEPORT,(char *)&on, sizeof(on) );
 		#endif
 
+
 		if ( AF_INET6 == service->socket_array->svr_socket[i].sockaddress.addr_type )  {
 
-			ret = bind(service->socket_array->svr_socket[i].conn.fd, (struct sockaddr *)&service->socket_array->svr_socket[i].sockaddress.m_in6, sizeof(struct sockaddr_in6) );
+			rc = bind(service->socket_array->svr_socket[i].conn.fd, (struct sockaddr *)&service->socket_array->svr_socket[i].sockaddress.m_in6, sizeof(struct sockaddr_in6) );
+
+			GNB_STD1(service->log, GNB_LOG_ID_EVENT_CORE, "bind6 rc=%d %s\n", rc, GNB_SOCKETADDRSTR1(&service->socket_array->svr_socket[i].sockaddress) );
 
 		}else if ( AF_INET == service->socket_array->svr_socket[i].sockaddress.addr_type ){
 
-			ret = bind(service->socket_array->svr_socket[i].conn.fd, (struct sockaddr *)&service->socket_array->svr_socket[i].sockaddress.m_in4, sizeof(struct sockaddr_in) );
+			rc = bind(service->socket_array->svr_socket[i].conn.fd, (struct sockaddr *)&service->socket_array->svr_socket[i].sockaddress.m_in4, sizeof(struct sockaddr_in) );
+
+			GNB_STD1(service->log, GNB_LOG_ID_EVENT_CORE, "bind rc=%d %s\n", rc, GNB_SOCKETADDRSTR1(&service->socket_array->svr_socket[i].sockaddress) );
+
 		}
 
-		if ( -1 == ret ){
+
+		if ( -1 == rc ){
 			perror("bind");
 			exit(1);
 		}
@@ -185,7 +198,7 @@ int gnb_network_service_listen(gnb_network_service_t *service){
 		}
 
 	    /*
-	     将 listen 的socket fd 设为O_NONBLOCK, 避免Server调用 accept 之前客户端发送 RST 断开导致Server阻塞在 accept
+	     将 listen 的 socket fd 设为O_NONBLOCK, 避免Server调用 accept 之前客户端发送 RST 断开导致Server阻塞在 accept
 	    */
 		#if defined(__UNIX_LIKE_OS__)
         on = fcntl(service->socket_array->svr_socket[i].conn.fd, F_GETFL, NULL );
@@ -194,12 +207,12 @@ int gnb_network_service_listen(gnb_network_service_t *service){
 
         #if defined(_WIN32)
         unsigned long argul = 1l;
-        ret = ioctlsocket(service->socket_array->svr_socket[i].conn.fd, FIONBIO, &argul);
+        rc = ioctlsocket(service->socket_array->svr_socket[i].conn.fd, FIONBIO, &argul);
         #endif
 
-		ret = listen( service->socket_array->svr_socket[i].conn.fd, 10 );
+		rc = listen( service->socket_array->svr_socket[i].conn.fd, 10 );
 
-		if( -1 == ret ) {
+		if( -1 == rc ) {
 			perror("listen");
 			exit(1);
 		}
@@ -224,12 +237,17 @@ int gnb_network_service_udp_send(gnb_network_service_t *service, gnb_connection_
 		n_send = sendto(conn->fd, (void *)conn->send_zbuf->pos, GNB_BUF_LEN(conn->send_zbuf), 0,
 						(struct sockaddr *)&conn->remote_sockaddress.m_in6, sizeof(struct sockaddr_in6));
 
+		GNB_DEBUG2(service->log, GNB_LOG_ID_EVENT_CORE, "send6 n_send=%d %s\n", n_send, GNB_SOCKETADDRSTR1(&conn->remote_sockaddress));
+
 	}else if( GNB_EVENT_FD_UDP4_SOCKET == event->fd_type ){
 
 		n_send = sendto(conn->fd, (void *)conn->send_zbuf->pos, GNB_BUF_LEN(conn->send_zbuf), 0,
 				(struct sockaddr *)&conn->remote_sockaddress.m_in4, sizeof(struct sockaddr_in));
 
+		GNB_DEBUG2(service->log, GNB_LOG_ID_EVENT_CORE, "send n_send=%d %s\n", n_send, GNB_SOCKETADDRSTR1(&conn->remote_sockaddress));
+
 	}
+
 
 	if ( -1 != n_send ){
 		conn->send_zbuf->pos += n_send;
@@ -248,14 +266,12 @@ static int do_accept(gnb_network_service_t *service, gnb_event_t *event){
 
 	socklen_t socklen;
 
-
 	struct sockaddr_in6     connect_addr6;
 	struct sockaddr_in      connect_addr;
 
 	gnb_event_t *add_event;
 
 	gnb_connection_t *conn;
-
 
 	if ( GNB_EVENT_FD_TCP6_LISTEN == event->fd_type ){
 
@@ -312,11 +328,11 @@ static int do_accept(gnb_network_service_t *service, gnb_event_t *event){
 
 		conn->listen_fd = event->fd;
 
-
 	}
 
-	gnb_connection_t *listen_conn = (gnb_connection_t *)event->udata;
+	GNB_STD1(service->log, GNB_LOG_ID_EVENT_CORE, "accept remote %s\n", GNB_SOCKETADDRSTR1(&conn->remote_sockaddress));
 
+	gnb_connection_t *listen_conn = (gnb_connection_t *)event->udata;
 
 	conn->local_sockaddress = listen_conn->local_sockaddress;
 
@@ -339,11 +355,10 @@ static int do_accept(gnb_network_service_t *service, gnb_event_t *event){
 
 
 static int do_connect(gnb_network_service_t *service, gnb_event_t *event){
-    
+
     int ret;
-    
+
     gnb_sockaddress_t sockaddress;
-    
     
     if ( GNB_EVENT_FD_TCPV6_CONNECT == event->fd_type ){
         
@@ -371,6 +386,8 @@ static int do_connect(gnb_network_service_t *service, gnb_event_t *event){
         do_close(service, event);
         return 0;
     }
+
+    GNB_STD1(service->log, GNB_LOG_ID_EVENT_CORE, "try to connect %s\n", GNB_SOCKETADDRSTR1(&conn->remote_sockaddress));
     
 	conn->recv_zbuf = gnb_zbuf_heap_alloc(service->heap, service->recv_zbuf_size);
 	conn->send_zbuf = gnb_zbuf_heap_alloc(service->heap, service->send_zbuf_size);
@@ -406,6 +423,7 @@ static int do_recv(gnb_network_service_t *service, gnb_event_t *event){
 	}
 
 	if ( rlen > 0 ){
+		conn->recv_zbuf->las = conn->recv_zbuf->pos + rlen;
 		goto finish;
 	}
 
@@ -419,15 +437,11 @@ handle_error:
 
         default:
             event->ev_type |= GNB_EVENT_TYPE_ERROR;
-            goto recv_callback;
+            break;
 
     }
 
 finish:
-
-	conn->recv_zbuf->las = conn->recv_zbuf->pos + rlen;
-
-recv_callback:
 
 	service->recv_cb(service,conn);
 
@@ -512,59 +526,88 @@ static int handle_tcp_event(gnb_network_service_t *service, gnb_event_t *event){
 
     gnb_connection_t *conn = (gnb_connection_t *)event->udata;
 
-	int ret = 0;
+	int rc = 0;
 
     if ( GNB_EVENT_TYPE_FINISH == event->ev_type) {
         return 1;
     }
 
-
 	if ( GNB_EVENT_FD_TCP6_LISTEN == event->fd_type || GNB_EVENT_FD_TCP4_LISTEN == event->fd_type ){
-		ret = do_accept(service, event);
+
+		rc = do_accept(service, event);
+
+		GNB_STD1(service->log, GNB_LOG_ID_EVENT_CORE, "accept rc=%d %s\n", rc, GNB_SOCKETADDRSTR1(&conn->remote_sockaddress));
+
 		goto finish;
 	}
 
 
     if ( (GNB_EVENT_FD_TCPV6_CONNECT == event->fd_type || GNB_EVENT_FD_TCPV4_CONNECT == event->fd_type) && TCP_CONNECT_WAIT == conn->status ) {
-        conn->status = TCP_CONNECT_SUCCESS;
-        ret = do_connect(service, event);
+
+    	conn->status = TCP_CONNECT_SUCCESS;
+
+        rc = do_connect(service, event);
+
+        GNB_STD1(service->log, GNB_LOG_ID_EVENT_CORE, "connect rc=%d %s\n", rc, GNB_SOCKETADDRSTR1(&conn->remote_sockaddress));
+
         goto finish;
+
     }
 
 
 	if( GNB_EVENT_TYPE_WRITE & event->ev_type ){
 
-		ret = do_send(service, event);
+		rc = do_send(service, event);
+
+		GNB_STD2(service->log, GNB_LOG_ID_EVENT_CORE, "send rc=%d %s\n", rc, GNB_SOCKETADDRSTR1(&conn->remote_sockaddress));
+
 	}
 
 
 	if( GNB_EVENT_TYPE_READ & event->ev_type ){
 
-		ret = do_recv(service, event);
+		rc = do_recv(service, event);
+
+		GNB_STD2(service->log, GNB_LOG_ID_EVENT_CORE, "recv rc=%d %s\n", rc, GNB_SOCKETADDRSTR1(&conn->remote_sockaddress));
+
 	}
 
 
 	if ( GNB_EVENT_TYPE_EOF & event->ev_type ){
+
 		do_close(service, event);
+
+		GNB_STD1(service->log, GNB_LOG_ID_EVENT_CORE, "GNB_EVENT_TYPE_EOF %s\n", GNB_SOCKETADDRSTR1(&conn->remote_sockaddress));
+
 		return 0;
 
 	}
+
 
 	if ( GNB_EVENT_TYPE_ERROR & event->ev_type ){
+
+		GNB_STD1(service->log, GNB_LOG_ID_EVENT_CORE, "GNB_EVENT_TYPE_ERROR %s\n", GNB_SOCKETADDRSTR1(&conn->remote_sockaddress));
+
 		do_close(service, event);
+
 		return 0;
+
 	}
+
 
 finish:
 
 	if (TCP_CONNECT_FINISH == conn->status){
+
+		GNB_STD1(service->log, GNB_LOG_ID_EVENT_CORE, "TCP_CONNECT_FINISH %s\n", GNB_SOCKETADDRSTR1(&conn->remote_sockaddress));
+
 		do_close(service, event);
+
 	}
 
-	return ret;
+	return rc;
 
 }
-
 
 
 
@@ -581,23 +624,24 @@ static int do_udp_recv(gnb_network_service_t *service, gnb_event_t *event){
 		n_recv = recvfrom(conn->fd, (void *)conn->recv_zbuf->las, GNB_BUF_REMAIN(conn->recv_zbuf), 0, (struct sockaddr *)&conn->remote_sockaddress.addr.in6, &conn->remote_sockaddress.socklen);
 
 	}else if( GNB_EVENT_FD_UDP4_SOCKET == event->fd_type ){
+
 		conn->remote_sockaddress.socklen = sizeof(struct sockaddr_in);
+
 		n_recv = recvfrom(conn->fd, (void *)conn->recv_zbuf->las, GNB_BUF_REMAIN(conn->recv_zbuf), 0, (struct sockaddr *)&conn->remote_sockaddress.addr.in, &conn->remote_sockaddress.socklen);
+
 	}else{
 		return -1;
 	}
+
+	GNB_DEBUG2(service->log, GNB_LOG_ID_EVENT_CORE, "recv6 n_recv=%d %s\n", n_recv, GNB_SOCKETADDRSTR1(&conn->remote_sockaddress));
 
 	if ( -1 == n_recv ){
 		return n_recv;
 	}
 
-
 	conn->recv_zbuf->las += n_recv;
 
 	service->recv_cb(service,conn);
-
-	//printf("UDP READ..................\n");
-
 
 	return n_recv;
 
@@ -606,7 +650,7 @@ static int do_udp_recv(gnb_network_service_t *service, gnb_event_t *event){
 
 
 static int do_udp_send(gnb_network_service_t *service, gnb_event_t *event){
-//printf("UDP WRITE..................\n");
+
 	gnb_connection_t *conn = (gnb_connection_t *)event->udata;
 
 	ssize_t n_send;
@@ -622,6 +666,8 @@ static int do_udp_send(gnb_network_service_t *service, gnb_event_t *event){
 				(struct sockaddr *)&conn->remote_sockaddress.m_in4, sizeof(struct sockaddr_in));
 
 	}
+
+	GNB_DEBUG2(service->log, GNB_LOG_ID_EVENT_CORE, "recv sendto=%d %s\n", n_send, GNB_SOCKETADDRSTR1(&conn->remote_sockaddress));
 
 	if ( -1 != n_send ){
 		conn->send_zbuf->pos += n_send;

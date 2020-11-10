@@ -60,7 +60,7 @@ gnb_event_cmd* gnb_create_event_cmd(){
 #endif
 
   	//For Test!!
-  	event_cmd = &select_event_cmd;
+  	//event_cmd = &select_event_cmd;
     //event_cmd = &kqueue_event_cmd;
 
 	return event_cmd;

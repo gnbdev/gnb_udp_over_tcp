@@ -19,6 +19,11 @@ typedef struct _udp_over_tcp_service_conf_t{
 
 }udp_over_tcp_service_conf_t;
 
+#define GNB_LOG_ID_UOT                 1
+
+
+#define GNB_PAYLOAD_TYPE_TCP_KEEPALIVE     'k'
+
 
 #endif
 

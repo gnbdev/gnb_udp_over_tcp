@@ -1,18 +1,16 @@
 #include <stdlib.h>
 
 #include "gnb_network_service.h"
-
 #include "gnb_udp_over_tcp.h"
 
 #include "gnb_address.h"
-
 #include "gnb_alloc.h"
-
 #include "gnb_hash32.h"
-
 #include "gnb_buf.h"
-
 #include "gnb_payload16.h"
+#include "gnb_address.h"
+#include "gnb_log.h"
+
 
 #define DEFAULT_TCP_RECONNECT_INTERVAL_TIME_SEC 1
 
@@ -35,7 +33,6 @@ typedef struct _uot_udp_service_ctx_t{
 
     uot_udp_service_session_t *session;
 
-
 	gnb_payload16_ctx_t  *gnb_payload16_ctx;
 
 }uot_udp_service_ctx_t;
@@ -48,8 +45,7 @@ static int start_tcp_connect(gnb_network_service_t *service){
 
 	udp_over_tcp_service_conf_t *udp_over_tcp_service_conf = (udp_over_tcp_service_conf_t *)service->service_conf;
 
-
-	int ret;
+	int rc;
 
 	gnb_connection_t *conn = gnb_connection_create(service);
 
@@ -59,10 +55,11 @@ static int start_tcp_connect(gnb_network_service_t *service){
 
     service_ctx->session->tcp_conn = conn;
 
-    ret = gnb_network_service_connect(service, conn);
+    rc = gnb_network_service_connect(service, conn);
 
+    GNB_STD1(service->log, GNB_LOG_ID_UOT, "connect %s rc=%d\n", GNB_SOCKETADDRSTR1(&conn->remote_sockaddress), rc);
 
-    return 0;
+    return rc;
 
 }
 
@@ -110,8 +107,6 @@ static int service_listen_cb(gnb_network_service_t *service){
 
 static int service_connect_cb(gnb_network_service_t *service, gnb_connection_t *conn){
 
-	uot_udp_service_ctx_t *service_ctx = (uot_udp_service_ctx_t *)service->ctx;
-
 	return 0;
 
 }
@@ -125,6 +120,17 @@ static int payload16_handle_callback(gnb_payload16_t *payload16, void *ctx) {
     uot_udp_service_ctx_t *service_ctx = (uot_udp_service_ctx_t *)service->ctx;
 
     uot_udp_service_session_t *session = service_ctx->session;
+
+
+
+
+
+    //判断 payload 的类型，如果是 keepalive 要回应,并记录到 keepalive_ts_sec
+
+
+
+
+
 
     gnb_connection_t *udp_conn = session->udp_conn;
 
@@ -155,22 +161,30 @@ static int payload16_handle_callback(gnb_payload16_t *payload16, void *ctx) {
 }
 
 
+
+
+/*
+改名为 handle_tcp，并且要 处理 tcp keepalive
+*/
+
 static void tcp_to_udp(gnb_network_service_t *service, gnb_connection_t *tcp_conn, gnb_connection_t *udp_conn){
 
 	int recv_len;
 
 	recv_len = (GNB_BUF_LEN(tcp_conn->recv_zbuf));
 
-
-	int ret;
+	int rc;
 
 	uot_udp_service_ctx_t *service_ctx = (uot_udp_service_ctx_t *)service->ctx;
 
-	ret = gnb_payload16_handle(tcp_conn->recv_zbuf->pos, recv_len, service_ctx->gnb_payload16_ctx, payload16_handle_callback);
+	rc = gnb_payload16_handle(tcp_conn->recv_zbuf->pos, recv_len, service_ctx->gnb_payload16_ctx, payload16_handle_callback);
 
-	if ( ret < 0 ){
-		printf("tcp_to_udp ret[%d]\n",ret);
+	if ( rc < 0 ){
+
 		tcp_conn->status = TCP_CONNECT_FINISH;
+
+		GNB_STD1(service->log, GNB_LOG_ID_UOT, "handle payload error rc=%d %s\n", rc, GNB_SOCKETADDRSTR1(&tcp_conn->remote_sockaddress));
+
 		return;
 	}
 
@@ -178,7 +192,9 @@ static void tcp_to_udp(gnb_network_service_t *service, gnb_connection_t *tcp_con
 
 }
 
-
+/*
+改名为 handle_udp
+*/
 static void udp_to_tcp(gnb_network_service_t *service, gnb_connection_t *udp_conn, gnb_connection_t *tcp_conn){
 
 	int recv_len;
@@ -186,15 +202,14 @@ static void udp_to_tcp(gnb_network_service_t *service, gnb_connection_t *udp_con
 	recv_len = (GNB_BUF_LEN(udp_conn->recv_zbuf));
 
 	if ( recv_len > GNB_BUF_SIZE(tcp_conn->send_zbuf) ){
-		//drop
+		GNB_STD1(service->log, GNB_LOG_ID_UOT, "udp side send buffer is small conn[%s]\n", GNB_SOCKETADDRSTR1(&tcp_conn->remote_sockaddress));
 		GNB_BUF_RESET(udp_conn->recv_zbuf);
 		return;
 	}
 
 	if ( recv_len > GNB_BUF_REMAIN(tcp_conn->send_zbuf) ){
-		//drop
 		GNB_BUF_RESET(udp_conn->recv_zbuf);
-		printf("udp side tcp buffer is FULL!!\n");
+		GNB_STD1(service->log, GNB_LOG_ID_UOT, "udp side tcp buffer is FULL! conn[%s]\n", GNB_SOCKETADDRSTR1(&tcp_conn->remote_sockaddress));
 		goto finish;
 	}
 
@@ -239,14 +254,14 @@ static int service_recv_cb(gnb_network_service_t *service, gnb_connection_t *con
 
 		if (NULL==tcp_conn){
 			GNB_BUF_RESET(udp_conn->recv_zbuf);
+			GNB_STD1(service->log, GNB_LOG_ID_UOT, "udp side tcp connect not init remote address[%s]\n", GNB_SOCKETADDRSTR1(&tcp_conn->remote_sockaddress));
 			return 0;
 		}
 
-
-		if (TCP_CONNECT_SUCCESS!=tcp_conn->status){
+		if (TCP_CONNECT_SUCCESS != tcp_conn->status){
+			GNB_STD1(service->log, GNB_LOG_ID_UOT, "udp side tcp connect not ready remote address[%s]\n", GNB_SOCKETADDRSTR1(&tcp_conn->remote_sockaddress));
 			return 0;
 		}
-
 
 		udp_to_tcp(service, udp_conn, tcp_conn);
 
@@ -261,9 +276,11 @@ static int service_recv_cb(gnb_network_service_t *service, gnb_connection_t *con
 		udp_conn = session->udp_conn;
 
 		if(NULL==session->udp_conn){
+			GNB_STD1(service->log, GNB_LOG_ID_UOT, "tcp side udp not ready remote address[%s] \n", GNB_SOCKETADDRSTR1(&tcp_conn->remote_sockaddress));
 			GNB_BUF_RESET(tcp_conn->recv_zbuf);
 			return 0;
 		}
+
 
 		tcp_to_udp(service, tcp_conn, session->udp_conn);
 
@@ -285,7 +302,6 @@ static int service_send_cb(gnb_network_service_t *service, gnb_connection_t *con
 }
 
 
-
 static int service_close_cb(gnb_network_service_t *service, gnb_connection_t *conn){
 
 	uot_udp_service_ctx_t *service_ctx = (uot_udp_service_ctx_t *)service->ctx;
@@ -305,7 +321,6 @@ static int service_idle_cb(gnb_network_service_t *service){
 
 	uot_udp_service_session_t *session = service_ctx->session;
 
-
 	if( (service->now_time_sec - session->last_reconnect_time_sec) > DEFAULT_TCP_RECONNECT_INTERVAL_TIME_SEC ){
 
 		if( NULL==session->tcp_conn ) {
@@ -315,6 +330,15 @@ static int service_idle_cb(gnb_network_service_t *service){
 
 	}
 
+#if 0
+	if( NULL==session->tcp_conn ) {
+		return 0;
+	}
+
+
+	// add keepalive handle
+
+#endif
 
 	return 0;
 

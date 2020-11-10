@@ -158,7 +158,9 @@ static int get_event(gnb_event_cmd *event_cmd, gnb_event_t **ev_lst, int *nevent
 	epoll_handler_ctx_t *handler_ctx = event_cmd->event_handler_ctx;
 
 	gnb_event_t *ev;
-	int timewait = 1;
+
+	//int timewait = 1;
+	int timewait = 1000;
 
 	int i;
 	int nepevent = 0;

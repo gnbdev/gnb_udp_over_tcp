@@ -82,8 +82,8 @@ u_char** gnb_hash32_string_keys(gnb_hash32_map_t *hash32_map, uint32_t *num);
 #define GNB_HASH32_UINT32_KEY(kv32)   (*(uint32_t *)kv32->key->data)
 #define GNB_HASH32_UINT32_VALUE(kv32) (*(uint32_t *)kv32->value->data)
 
-#define GNB_HASH32_UINT64_KEY(kv32)   ((uint64_t)kv32->key->data)
-#define GNB_HASH32_UINT64_VALUE(kv32) ((uint64_t)kv32->value->data)
+#define GNB_HASH32_UINT64_KEY(kv32)   (*(uint64_t *)kv32->key->data)
+#define GNB_HASH32_UINT64_VALUE(kv32) (*(uint64_t *)kv32->key->data)
 
 #define GNB_HASH32_STRING_KEY(kv32)   ((unsigned char *)kv32->key->data)
 #define GNB_HASH32_STRING_VALUE(kv32) ((unsigned char *)kv32->value->data)
@@ -91,10 +91,11 @@ u_char** gnb_hash32_string_keys(gnb_hash32_map_t *hash32_map, uint32_t *num);
 #define GNB_HASH32_KEY_SIZE(kv32)     (kv32->key->size)
 #define GNB_HASH32_VALUE_SIZE(kv32)   (kv32->value->size)
 
-#define GNB_HASH32_KEY_PTR(kv32)     kv32!=NULL?(*(void **)&kv32->key->data):NULL
-#define GNB_HASH32_VALUE_PTR(kv32)   kv32!=NULL?(*(void **)&kv32->value->data):NULL
+#define GNB_HASH32_KEY_PTR(kv32)      kv32!=NULL?(*(void **)&kv32->key->data):NULL
+#define GNB_HASH32_VALUE_PTR(kv32)    kv32!=NULL?(*(void **)&kv32->value->data):NULL
 
-#define GNB_HASH32_VALUE(kv) kv!=NULL?kv->value:NULL
-#define GNB_HASH32_GET_VALUE(hash32_map,key,key_len)    GNB_HASH32_VALUE( gnb_hash32_get(hash32_map,key,key_len) )
+#define GNB_HASH32_VALUE(kv32)       kv32!=NULL?kv32->value:NULL
+
+#define GNB_HASH32_GET_VALUE(hash32_map,key,key_len)  GNB_HASH32_VALUE( gnb_hash32_get(hash32_map,key,key_len) )
 
 #endif

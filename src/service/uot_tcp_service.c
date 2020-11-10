@@ -9,6 +9,8 @@
 #include "gnb_lru32.h"
 #include "gnb_buf.h"
 #include "gnb_payload16.h"
+#include "gnb_log.h"
+
 
 #define UTO_MAX_TCP_PAYLOAD_SIZE 4096
 
@@ -37,7 +39,6 @@ typedef struct _uot_tcp_service_ctx_t{
     gnb_heap_t *heap;
 
     gnb_lru32_t *channel_lru;
-
 
 	gnb_payload16_ctx_t  *gnb_payload16_ctx;
 
@@ -117,18 +118,24 @@ static void udp_to_tcp(gnb_network_service_t *service, uot_channel_t *channel){
 
 	recv_len = (GNB_BUF_LEN(udp_conn->recv_zbuf));
 
-
 	if ( recv_len > GNB_BUF_SIZE(tcp_conn->send_zbuf) ){
-		//drop
+
 		GNB_BUF_RESET(udp_conn->recv_zbuf);
+
+		GNB_STD1(service->log, GNB_LOG_ID_UOT, "tcp side send buffer is small conn[%s]\n", GNB_SOCKETADDRSTR1(&tcp_conn->remote_sockaddress));
+
 		return;
+
 	}
 
 	if ( recv_len > GNB_BUF_REMAIN(tcp_conn->send_zbuf) ){
-		//drop
+
 		GNB_BUF_RESET(udp_conn->recv_zbuf);
-		printf("tcp side tcp buffer is FULL!!\n");
+
+		GNB_STD1(service->log, GNB_LOG_ID_UOT, "tcp side tcp buffer is FULL! conn[%s]\n", GNB_SOCKETADDRSTR1(&tcp_conn->remote_sockaddress));
+
 		goto finish;
+
 	}
 
 
@@ -166,6 +173,21 @@ static int payload16_handle_callback(gnb_payload16_t *payload16, void *ctx) {
 	uot_tcp_service_ctx_t *service_ctx = (uot_tcp_service_ctx_t *)service->ctx;
 
 
+
+
+	//要处理payload类型 并记录到 keepalive_ts_sec
+
+
+
+
+
+
+
+
+
+
+
+
 	uint32_t payload_size     = gnb_payload16_size(payload16);
 	uint32_t payload_data_len = gnb_payload16_data_len(payload16);
 
@@ -183,10 +205,12 @@ static int payload16_handle_callback(gnb_payload16_t *payload16, void *ctx) {
 	ssize_t n_send = gnb_network_service_udp_send(service, udp_conn);
 
 	if( -1 == n_send ) {
+		//add log
 		GNB_SERVICE_NOTIFY_SEND(service, udp_conn);
 	}
 
 	if ( n_send > 0 ){
+		//add log
 		GNB_BUF_RESET(udp_conn->send_zbuf);
 	}
 
@@ -217,7 +241,6 @@ static void tcp_to_udp(gnb_network_service_t *service, uot_channel_t *channel){
 		tcp_conn->status = TCP_CONNECT_FINISH;
 		return;
 	}
-
 
 	GNB_BUF_RESET(tcp_conn->recv_zbuf);
 
@@ -279,8 +302,6 @@ static int service_close_cb(gnb_network_service_t *service, gnb_connection_t *co
 		return 0;
 	}
 
-	gnb_connection_close(service, channel->udp_conn);
-
 	gnb_heap_free(service->heap,channel);
 
 	return 0;
@@ -289,6 +310,9 @@ static int service_close_cb(gnb_network_service_t *service, gnb_connection_t *co
 
 
 static int service_idle_cb(gnb_network_service_t *service){
+
+
+	//长期不通信的连接，要不要关闭？
 
 	return 0;
 
