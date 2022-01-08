@@ -35,7 +35,8 @@ typedef struct _gnb_connection_t{
 	gnb_sockaddress_t local_sockaddress;
 	gnb_sockaddress_t remote_sockaddress;
 
-	int listen_fd;
+	// 创建该tcp连接时的 listen socket 句柄
+	int listen_tcp_fd;
 
 	uint64_t    keepalive_ts_sec;
 
@@ -44,6 +45,13 @@ typedef struct _gnb_connection_t{
 	gnb_zbuf_t  *send_zbuf;
 
 	gnb_event_t *event;
+
+	uint64_t n_recv;
+	uint64_t n_send;
+
+	uint64_t n_recv_total;
+	uint64_t n_send_total;
+
 
 	//存放针对这个地址端口的服务的一些信息
 	void *conn_data;
@@ -74,22 +82,14 @@ typedef int (*gnb_service_idle_cb_t)(gnb_network_service_t *service);
 
 
 
-typedef struct _gnb_service_socket_t{
 
-	gnb_sockaddress_t sockaddress;
-
-	gnb_connection_t conn;
-
-}gnb_service_socket_t;
-
-
-typedef struct _gnb_service_socket_array_t{
+typedef struct _gnb_conn_array_t{
 
 	size_t size;
 
-	gnb_service_socket_t svr_socket[0];
+	gnb_connection_t conn[0];
 
-}gnb_service_socket_array_t;
+}gnb_conn_array_t;
 
 
 
@@ -106,39 +106,39 @@ typedef struct _gnb_network_service_t{
 
 	gnb_event_cmd *event_cmd;
 
-	gnb_service_socket_array_t *socket_array;
+	gnb_conn_array_t *conn_array;
 
-    #define m_sockaddress0 socket_array->svr_socket[0].sockaddress
-    #define m_sockaddress1 socket_array->svr_socket[1].sockaddress
-    #define m_sockaddress2 socket_array->svr_socket[2].sockaddress
-    #define m_sockaddress3 socket_array->svr_socket[3].sockaddress
+	#define m_conn0 conn_array->conn[0]
+	#define m_conn1 conn_array->conn[1]
+	#define m_conn2 conn_array->conn[2]
 
-    #define m_conn0 socket_array->svr_socket[0].conn
-    #define m_conn1 socket_array->svr_socket[1].conn
-    #define m_conn2 socket_array->svr_socket[2].conn
-    #define m_conn3 socket_array->svr_socket[3].conn
+	#define m_local_sockaddress0 conn_array->conn[0].local_sockaddress
+	#define m_local_sockaddress1 conn_array->conn[1].local_sockaddress
+	#define m_local_sockaddress2 conn_array->conn[2].local_sockaddress
+	#define m_local_sockaddress3 conn_array->conn[3].local_sockaddress
+	#define m_local_sockaddress4 conn_array->conn[4].local_sockaddress
 
-    #define m_conn0_fd socket_array->svr_socket[0].conn.fd
-    #define m_conn1_fd socket_array->svr_socket[1].conn.fd
-    #define m_conn2_fd socket_array->svr_socket[2].conn.fd
-    #define m_conn3_fd socket_array->svr_socket[3].conn.fd
+	#define m_remote_sockaddress0 conn_array->conn[0].remote_sockaddress
+	#define m_remote_sockaddress1 conn_array->conn[1].remote_sockaddress
+	#define m_remote_sockaddress2 conn_array->conn[2].remote_sockaddress
+	#define m_remote_sockaddress3 conn_array->conn[3].remote_sockaddress
+	#define m_remote_sockaddress4 conn_array->conn[4].remote_sockaddress
 
+    #define m_conn0_fd conn_array->conn[0].fd
+	#define m_conn1_fd conn_array->conn[1].fd
+	#define m_conn2_fd conn_array->conn[2].fd
+	#define m_conn3_fd conn_array->conn[3].fd
+	#define m_conn4_fd conn_array->conn[4].fd
 
 	gnb_service_init_cb_t    init_cb;
-
 	gnb_service_listen_cb_t  listen_cb;
-
 	gnb_service_accept_cb_t  accept_cb;
-
 	gnb_service_connect_cb_t connect_cb;
-
 	gnb_service_recv_cb_t    recv_cb;
 
 	//告知发送的情况，缓冲区剩余字节或全部发送成功
 	gnb_service_send_cb_t    send_cb;
-
 	gnb_service_close_cb_t   close_cb;
-
 	gnb_service_idle_cb_t    idle_cb;
 
 
@@ -173,7 +173,7 @@ void gnb_network_service_loop(gnb_network_service_t *service);
 
 
 gnb_connection_t* gnb_connection_create(gnb_network_service_t *service);
-
+void gnb_connection_release(gnb_network_service_t *service, gnb_connection_t *conn);
 
 void gnb_connection_close(gnb_network_service_t *service, gnb_connection_t *conn);
 

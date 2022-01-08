@@ -1,5 +1,22 @@
-#ifndef gnb_payload16_h
-#define gnb_payload16_h
+/*
+   Copyright (C) gnbdev
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef GNB_PAYLOAD16_H
+#define GNB_PAYLOAD16_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -45,9 +62,9 @@ typedef struct _gnb_payload16_ctx_t{
 
 	unsigned char buffer[2];
 
-    //传入payload
+	//传入payload
 	gnb_payload16_t *gnb_payload16;
-    //传入的 payload 内存块大小
+	//传入的 payload 内存块大小
 	uint32_t max_payload_size;
 
 	void *udata;
@@ -63,5 +80,6 @@ typedef int (*gnb_payload16_handle_cb_t)(gnb_payload16_t *gnb_payload16, void *c
 int gnb_payload16_handle(void *data, size_t data_size, gnb_payload16_ctx_t *gnb_payload16_ctx, gnb_payload16_handle_cb_t cb);
 
 #define GNB_PAYLOAD16_FRAME_SIZE(payload) gnb_payload16_size(payload)
+#define GNB_PAYLOAD16_DATA_SIZE(payload)  gnb_payload16_data_len(payload)
 
 #endif

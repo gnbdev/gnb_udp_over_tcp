@@ -1,9 +1,25 @@
+/*
+   Copyright (C) gnbdev
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include <stdlib.h>
 #include <string.h>
 
 #include "gnb_lru32.h"
 #include "gnb_doubly_linked_list.h"
-
 
 static gnb_lru32_node_t *gnb_lru32_node_fixed_pool_pop(gnb_lru32_t *lru){
 
@@ -120,7 +136,7 @@ void* gnb_lru32_put(gnb_lru32_t *lru, unsigned char *key, uint32_t key_len, void
     
     gnb_doubly_linked_list_add(lru->doubly_linked_list, lru_node->dl_node);
 
-    gnb_hash32_put(lru->lru_node_map, key, (uint32_t)key_len, lru_node, 0);
+    gnb_hash32_set(lru->lru_node_map, key, (uint32_t)key_len, lru_node, 0);
     lru_node->kv = gnb_hash32_get(lru->lru_node_map, key, (uint32_t)key_len);
     
     gnb_doubly_linked_list_node_set(lru_node->dl_node,lru_node);
@@ -170,7 +186,7 @@ void gnb_lru32_store(gnb_lru32_t *lru, unsigned char *key, uint32_t key_len, voi
     
     gnb_doubly_linked_list_add(lru->doubly_linked_list, lru_node->dl_node);
 
-    gnb_hash32_put(lru->lru_node_map, key, (uint32_t)key_len, lru_node, 0);
+    gnb_hash32_set(lru->lru_node_map, key, (uint32_t)key_len, lru_node, 0);
     lru_node->kv = gnb_hash32_get(lru->lru_node_map, key, (uint32_t)key_len);
     
     gnb_doubly_linked_list_node_set(lru_node->dl_node,lru_node);
@@ -213,7 +229,7 @@ void gnb_lru32_fixed_store(gnb_lru32_t *lru, unsigned char *key, uint32_t key_le
 
     gnb_doubly_linked_list_add(lru->doubly_linked_list, lru_node->dl_node);
 
-    gnb_hash32_put(lru->lru_node_map, key, (uint32_t)key_len, lru_node, 0);
+    gnb_hash32_set(lru->lru_node_map, key, (uint32_t)key_len, lru_node, 0);
     lru_node->kv = gnb_hash32_get(lru->lru_node_map, key, (uint32_t)key_len);
     
     gnb_doubly_linked_list_node_set(lru_node->dl_node,lru_node);
@@ -314,7 +330,7 @@ void* gnb_lru32_pop_head(gnb_lru32_t *lru){
     gnb_doubly_linked_list_node_t *head_dl_node;
 
     if ( 0 == lru->size || NULL==lru->doubly_linked_list->head ){
-    	return NULL;
+        return NULL;
     }
 
     pop_lru_node = (gnb_lru32_node_t *)lru->doubly_linked_list->head->data;
@@ -385,7 +401,7 @@ void* gnb_lru32_get_head(gnb_lru32_t *lru){
     gnb_lru32_node_t *pop_lru_node;
 
     if ( 0 == lru->size || NULL==lru->doubly_linked_list->head ){
-    	return NULL;
+        return NULL;
     }
 
     pop_lru_node = (gnb_lru32_node_t *)lru->doubly_linked_list->head->data;
@@ -408,7 +424,7 @@ void* gnb_lru32_get_tail(gnb_lru32_t *lru){
     gnb_lru32_node_t *pop_lru_node;
 
     if ( 0 == lru->size || NULL==lru->doubly_linked_list->tail ){
-    	return NULL;
+        return NULL;
     }
 
     pop_lru_node = (gnb_lru32_node_t *)lru->doubly_linked_list->tail->data;

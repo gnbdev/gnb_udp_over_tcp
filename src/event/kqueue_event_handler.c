@@ -121,7 +121,7 @@ static int add_event(gnb_event_cmd *event_cmd, gnb_event_t *ev, int ev_type){
 
     kevent( handler_ctx->kqueue_fd, fd_events->changelist, 2, NULL, 0, NULL );
 
-	return 0;
+    return 0;
 
 }
 
@@ -280,22 +280,22 @@ static int finish_event(gnb_event_cmd *event_cmd){
 
 gnb_event_cmd kqueue_event_cmd = {
 
-	.mod_name = "kqueue_event",
+    .mod_name = "kqueue_event",
 
-	.heap = NULL,
+    .heap = NULL,
 
-	.self = &kqueue_event_cmd,
+    .self = &kqueue_event_cmd,
 
-	.init_event = init_event,
+    .init_event = init_event,
 
-	.add_event  = add_event,
-	.set_event  = set_event,
-	.del_event  = del_event,
-	.get_event  = get_event,
+    .add_event  = add_event,
+    .set_event  = set_event,
+    .del_event  = del_event,
+    .get_event  = get_event,
 
-	.finish_event = finish_event,
+    .finish_event = finish_event,
 
-	.event_handler_ctx = NULL
+    .event_handler_ctx = NULL
 
 };
 

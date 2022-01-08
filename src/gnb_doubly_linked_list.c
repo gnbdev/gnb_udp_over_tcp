@@ -1,7 +1,23 @@
+/*
+   Copyright (C) gnbdev
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include <stdlib.h>
 #include <string.h>
 #include "gnb_doubly_linked_list.h"
-
 
 void gnb_doubly_linked_list_node_set(gnb_doubly_linked_list_node_t *doubly_linked_list_node,void *data){
     doubly_linked_list_node->data = data;
@@ -172,10 +188,9 @@ int gnb_doubly_linked_list_move_head(gnb_doubly_linked_list_t *doubly_linked_lis
     doubly_linked_list->head = dl_node;
     
     dl_node->pre = NULL;
-    
+
     return 0;
 }
-
 
 
 int gnb_doubly_linked_list_pop(gnb_doubly_linked_list_t *doubly_linked_list, gnb_doubly_linked_list_node_t *dl_node){
@@ -213,7 +228,6 @@ int gnb_doubly_linked_list_pop(gnb_doubly_linked_list_t *doubly_linked_list, gnb
 
     if( NULL == pre_node ){
         //is header
-        
         if ( doubly_linked_list->head != dl_node ){
             return -1;
         }
@@ -221,7 +235,6 @@ int gnb_doubly_linked_list_pop(gnb_doubly_linked_list_t *doubly_linked_list, gnb
         if( 1 == doubly_linked_list->num ){
             return -1;
         }
-        
         
         nex_node->pre = NULL;
         doubly_linked_list->head = nex_node;

@@ -1,5 +1,22 @@
-#ifndef gnb_time_h
-#define gnb_time_h
+/*
+   Copyright (C) gnbdev
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef GNB_TIME_H
+#define GNB_TIME_H
 
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__) || defined(__OpenBSD__)
 #define __UNIX_LIKE_OS__ 1
@@ -9,16 +26,11 @@
 #include <time.h>
 #include <unistd.h>
 
-int64_t gnb_timestamp_sec();
+uint64_t gnb_timestamp_sec();
 
 /*微秒*/
 uint64_t gnb_timestamp_usec();
 
-/*
- 例子，休眠 100 毫秒
- gnb_sleep(0, 100*1000000l);
- */
-//void gnb_sleep(long sec, long nanosec);
 
 //format:"%Y_%m_%d_%H.%M.%S"
 void gnb_now_timef(const char *format, char *buffer, size_t buffer_size);
@@ -42,6 +54,4 @@ int gnb_now_yday();
 #define GNB_SLEEP_MILLISECOND(millisecond)	Sleep(millisecond)
 #endif
 
-
 #endif
-

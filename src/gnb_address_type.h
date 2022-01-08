@@ -1,8 +1,24 @@
-#ifndef gnb_address_type_h
-#define gnb_address_type_h
+/*
+   Copyright (C) gnbdev
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef GNB_ADDRESS_TYPE_H
+#define GNB_ADDRESS_TYPE_H
 
 #include "gnb_platform.h"
-
 
 #ifdef __UNIX_LIKE_OS__
 #include <netinet/in.h>
@@ -15,6 +31,11 @@
 #include <ws2tcpip.h>
 #endif
 
+#include <stddef.h>
+#include <stdint.h>
+
+#define GNB_IP6_PORT_STRING_SIZE ( 46 + 2 + sizeof("65535") + 1 )
+#define GNB_IP4_PORT_STRING_SIZE ( 16 + 1 + sizeof("65535") + 1 )
 
 typedef struct _gnb_address_t{
 

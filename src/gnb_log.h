@@ -1,5 +1,22 @@
-#ifndef gnb_log_h
-#define gnb_log_h
+/*
+   Copyright (C) 2019 gnbdev
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef GNB_LOG_H
+#define GNB_LOG_H
 
 #include <inttypes.h>
 
@@ -13,12 +30,13 @@ gnb_log_ctx_t* gnb_log_ctx_create();
 #define GNB_LOG_TYPE_ERROR 2
 
 
-//level 越大，日志信息越详细,0不输出日志，暂时未用
+//log level越大，日志信息越详细,0不输出日志
+#define GNB_LOG_LEVEL_UNSET    0xFF
+
 #define GNB_LOG_LEVEL0          0
 #define GNB_LOG_LEVEL1          1
 #define GNB_LOG_LEVEL2          2
 #define GNB_LOG_LEVEL3          3
-
 
 
 /*
@@ -27,13 +45,7 @@ level 控制 console file udp 的输出
 STD DEBUG ERROR 只是作为一种日志的内置标签，不通过 level 细分控制
 
 要控制 debug 输出，可以让STD 使用小的level，DEBUG用高的level
-
-
-STD    level = 1
-ERROR  level = 2
-DEBUG  level = 3
 */
-
 
 void gnb_logf(gnb_log_ctx_t *log, uint8_t log_type, uint8_t log_id, uint8_t level, const char *format, ...);
 
@@ -49,7 +61,7 @@ int gnb_log_udp_set_addr6(gnb_log_ctx_t *log, char *ip, uint16_t port6);
 int gnb_log_udp_set_addr4_string(gnb_log_ctx_t *log, char *sockaddress4_string);
 
 
-#define GNB_STD1(log,log_id,format,...)                                                          \
+#define GNB_LOG1(log,log_id,format,...)                                                          \
         do{                                                                                      \
 			if ( NULL != log && GNB_LOG_OUTPUT_NONE != log->output_type &&                       \
 				 (log->config_table[log_id].console_level >= GNB_LOG_LEVEL1 ||                   \
@@ -61,7 +73,7 @@ int gnb_log_udp_set_addr4_string(gnb_log_ctx_t *log, char *sockaddress4_string);
         }while(0);
 
 
-#define GNB_STD2(log,log_id,format,...)                                                          \
+#define GNB_LOG2(log,log_id,format,...)                                                          \
         do{                                                                                      \
 			if ( NULL != log && GNB_LOG_OUTPUT_NONE != log->output_type &&                       \
 				 (log->config_table[log_id].console_level >= GNB_LOG_LEVEL2 ||                   \
@@ -72,7 +84,7 @@ int gnb_log_udp_set_addr4_string(gnb_log_ctx_t *log, char *sockaddress4_string);
 			}                                                                                    \
         }while(0);
 
-#define GNB_STD3(log,log_id,format,...)                                                          \
+#define GNB_LOG3(log,log_id,format,...)                                                          \
         do{                                                                                      \
 			if ( NULL != log && GNB_LOG_OUTPUT_NONE != log->output_type &&                       \
 				 (log->config_table[log_id].console_level >= GNB_LOG_LEVEL3 ||                   \

@@ -1,3 +1,20 @@
+/*
+   Copyright (C) gnbdev
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include <stdlib.h>
 #include <string.h>
 #include "gnb_hash32.h"
@@ -9,48 +26,7 @@ typedef struct _gnb_hash32_bucket_t{
 }gnb_hash32_bucket_t;
 
 
-//murmurhash from nginx
-uint32_t gnb_hash(unsigned char *data, size_t len){
-
-    uint32_t  h, k;
-
-    h = 0 ^ (uint32_t)len;
-
-    while (len >= 4) {
-        k  = data[0];
-        k |= data[1] << 8;
-        k |= data[2] << 16;
-        k |= data[3] << 24;
-
-        k *= 0x5bd1e995;
-        k ^= k >> 24;
-        k *= 0x5bd1e995;
-
-        h *= 0x5bd1e995;
-        h ^= k;
-
-        data += 4;
-        len -= 4;
-    }
-
-    switch (len) {
-    case 3:
-        h ^= data[2] << 16;
-        /* fall through */
-    case 2:
-        h ^= data[1] << 8;
-        /* fall through */
-    case 1:
-        h ^= data[0];
-        h *= 0x5bd1e995;
-    }
-
-    h ^= h >> 13;
-    h *= 0x5bd1e995;
-    h ^= h >> 15;
-
-    return h;
-}
+uint32_t murmurhash_hash(unsigned char *data, size_t len);
 
 
 gnb_hash32_map_t *gnb_hash32_create(gnb_heap_t *heap, uint32_t bucket_num, uint32_t kv_num){
@@ -99,7 +75,7 @@ void gnb_hash32_release(gnb_hash32_map_t *hash32_map){
 
 
 gnb_kv32_t *gnb_kv32_create(gnb_hash32_map_t *hash32_map, u_char *key, uint32_t key_len, u_char *value, uint32_t value_len){
-    
+
     uint32_t r_key_len;
     uint32_t r_value_len;
     
@@ -133,7 +109,7 @@ gnb_kv32_t *gnb_kv32_create(gnb_hash32_map_t *hash32_map, u_char *key, uint32_t 
         memcpy(kv->value->data, value, value_len);
         kv->value->size = value_len;
     } else {
-        //直接存 void *
+        //直接存 void*
         GNB_BLOCK_VOID(kv->value) = value;
         kv->value->size = 0;
     }
@@ -149,11 +125,11 @@ void gnb_kv32_release(gnb_hash32_map_t *hash_map, gnb_kv32_t *kv){
 }
 
 
-gnb_kv32_t *gnb_hash32_put(gnb_hash32_map_t *hash32_map, u_char *key, uint32_t key_len, void *value, uint32_t value_len){
-    
+gnb_kv32_t *gnb_hash32_set(gnb_hash32_map_t *hash32_map, u_char *key, uint32_t key_len, void *value, uint32_t value_len){
+
     gnb_kv32_t *kv = NULL;
 
-    uint32_t hashcode = gnb_hash(key, key_len);
+    uint32_t hashcode = murmurhash_hash(key, key_len);
 
     uint32_t bucket_idx = hashcode % hash32_map->bucket_num;
     
@@ -182,11 +158,17 @@ gnb_kv32_t *gnb_hash32_put(gnb_hash32_map_t *hash32_map, u_char *key, uint32_t k
 
             kv = kv_chain;
 
-            if (pre_kv_chain != kv_chain) {
-                pre_kv_chain->nex = gnb_kv32_create(hash32_map, key, key_len, value, value_len);
+            if ( 0 != value_len ){
+                 memcpy(kv->value->data, value, value_len);
+                 kv->value->size = value_len;
+            } else {
+                 //直接存 void*
+                 GNB_BLOCK_VOID(kv->value) = value;
+                 kv->value->size = 0;
             }
-            
+
             break;
+
         }
 
         pre_kv_chain = kv_chain;
@@ -212,7 +194,7 @@ int gnb_hash32_store(gnb_hash32_map_t *hash32_map, u_char *key, uint32_t key_len
 
     gnb_kv32_t *kv = NULL;
 
-    uint32_t hashcode = gnb_hash(key, key_len);
+    uint32_t hashcode = murmurhash_hash(key, key_len);
 
     uint32_t bucket_idx = hashcode % hash32_map->bucket_num;
     
@@ -239,9 +221,14 @@ int gnb_hash32_store(gnb_hash32_map_t *hash32_map, u_char *key, uint32_t key_len
         if ( !memcmp(kv_chain->key->data, key, key_len) ) {
             
             gnb_kv32_release(hash32_map, kv_chain);
-            
-            if (pre_kv_chain != kv_chain) {
+
+            if ( bucket->kv_chain != kv_chain ) {
+
                 pre_kv_chain->nex = gnb_kv32_create(hash32_map, key, key_len, value, value_len);
+
+            } else {
+
+                bucket->kv_chain = gnb_kv32_create(hash32_map, key, key_len, value, value_len);
             }
 
             break;
@@ -270,7 +257,7 @@ gnb_kv32_t *gnb_hash32_get(gnb_hash32_map_t *hash32_map, u_char *key, uint32_t k
     
     gnb_kv32_t *kv = NULL;
     
-    uint32_t hashcode = gnb_hash(key, key_len);
+    uint32_t hashcode = murmurhash_hash(key, key_len);
 
     uint32_t bucket_idx = hashcode % hash32_map->bucket_num;
     
@@ -309,7 +296,7 @@ gnb_kv32_t *gnb_hash32_del(gnb_hash32_map_t *hash32_map, u_char *key, uint32_t k
 
     gnb_kv32_t *old_kv = NULL;
 
-    uint32_t hashcode = gnb_hash(key, key_len);
+    uint32_t hashcode = murmurhash_hash(key, key_len);
 
     uint32_t bucket_idx = hashcode % hash32_map->bucket_num;
     

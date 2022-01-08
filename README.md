@@ -5,54 +5,6 @@ GNB节点间通过UDP协议传输数据，在一些网络环境下的路由器/�
 
 gnb_udp_over_tcp 是一个为GNB开发的通过tcp链路中转UDP分组转发的服务。
 
-gnb_udp_over_tcp可以为其他基于UDP协议的服务中转数据。
-
-# 用nc作本地测试演示
-```
-[netcat]                          (nc -u 127.0.0.1 5001)
-    |
-   udp
-    |
-[udp_over_tcp udp:127.0.0.1:5001] (./gnb_udp_over_tcp -u -l 5001 127.0.0.1 6000)
-    |
-   tcp
-    |
-[udp_over_tcp tcp:127.0.0.1:6000] (./gnb_udp_over_tcp -t -l 6000 127.0.0.1 7000)
-    |
-   udp
-    |
-[netcat udp:127.0.0.1:7000]       (nc -u -l 7000)
-```
-
-## Step1
-用 nc 监听 7000 udp 端口
-
-```sh
-nc -u -l 7000
-```
-
-## Step2
-启动 gnb_udp_over_tcp 的 tcp端: 监听 tcp 6000 端口，每个接入该端口的tcp链路将建立起一个udp socket构成一个channel，tcp链路收到的报文发往 127.0.0.1 的 UDP 7000端口，从udp端收到的数据将发往tcp链路的另一端。
-gnb_udp_over_tcp的tcp端可以同时接入多个tcp连接并且转发到同一个目的地址的udp端口。
-
-```sh
-./gnb_udp_over_tcp -t -l 6000 127.0.0.1 7000
-```
-
-
-## Step3
-启动 gnb_udp_over_tcp 的 udp端:  监听 udp 5001 端口，与 127.0.0.1 tcp 端口 6000 建立tcp链路，udp 端收到的数据发往tcp链路的另一端，从tcp链路收到的数据发往udp端。
-```sh
-./gnb_udp_over_tcp -u -l 5001 127.0.0.1 6000
-```
-
-## Step4
-用 nc 访问 127.0.0.1 的 5001 udp 端口，检验数据是否被成功转发。
-
-```sh
-nc -u 127.0.0.1 5001
-```
-
 # 通过 gnb_udp_over_tcp 中继 GNB 数据
 
 ## 演示环境
@@ -99,6 +51,55 @@ address.conf中不要配置 i 类型的GNB节点
 ./gnb_udp_over_tcp -u -l 5001 192.168.1.11 6000
 ```
 启动本地的GNB节点后 ping 10.1.0.25 检验是否能够ping通。
+
+
+
+# gnb_udp_over_tcp可以为其他基于UDP协议的服务中转数据
+## 用nc作本地测试演示
+```
+[netcat]                          (nc -u 127.0.0.1 5001)
+    |
+   udp
+    |
+[udp_over_tcp udp:127.0.0.1:5001] (./gnb_udp_over_tcp -u -l 5001 127.0.0.1 6000)
+    |
+   tcp
+    |
+[udp_over_tcp tcp:127.0.0.1:6000] (./gnb_udp_over_tcp -t -l 6000 127.0.0.1 7000)
+    |
+   udp
+    |
+[netcat udp:127.0.0.1:7000]       (nc -u -l 7000)
+```
+
+## Step1
+用 nc 监听 7000 udp 端口
+
+```sh
+nc -u -l 7000
+```
+
+## Step2
+启动 gnb_udp_over_tcp 的 tcp端: 监听 tcp 6000 端口，每个接入该端口的tcp链路将建立起一个udp socket构成一个channel，tcp链路收到的报文发往 127.0.0.1 的 UDP 7000端口，从udp端收到的数据将发往tcp链路的另一端。
+gnb_udp_over_tcp的tcp端可以同时接入多个tcp连接并且转发到同一个目的地址的udp端口。
+
+```sh
+./gnb_udp_over_tcp -t -l 6000 127.0.0.1 7000
+```
+
+
+## Step3
+启动 gnb_udp_over_tcp 的 udp端:  监听 udp 5001 端口，与 127.0.0.1 tcp 端口 6000 建立tcp链路，udp 端收到的数据发往tcp链路的另一端，从tcp链路收到的数据发往udp端。
+```sh
+./gnb_udp_over_tcp -u -l 5001 127.0.0.1 6000
+```
+
+## Step4
+用 nc 访问 127.0.0.1 的 5001 udp 端口，检验数据是否被成功转发。
+
+```sh
+nc -u 127.0.0.1 5001
+```
 
 ---
 [免责声明](docs/disclaimer.md)
