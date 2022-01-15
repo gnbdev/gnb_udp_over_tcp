@@ -7,13 +7,9 @@
 #include <sys/time.h>
 
 #include "gnb_buf.h"
-
 #include "gnb_event.h"
-
 #include "gnb_fixed_pool.h"
-
 #include "gnb_address_type.h"
-
 #include "gnb_log_type.h"
 
 
@@ -177,16 +173,13 @@ void gnb_connection_release(gnb_network_service_t *service, gnb_connection_t *co
 
 void gnb_connection_close(gnb_network_service_t *service, gnb_connection_t *conn);
 
-//gnb_network_service_tcp_connect
 int gnb_network_service_connect(gnb_network_service_t *service, gnb_connection_t *conn);
-//gnb_network_service_udp_connect
+
 int gnb_network_service_udp_channel(gnb_network_service_t *service, gnb_connection_t *conn);
 
 int gnb_network_service_udp_send(gnb_network_service_t *service, gnb_connection_t *conn);
 
-
 #define GNB_EVENT_PAYLOAD_TYPE_UDPLOG    0x45
-
 
 #define GNB_LOG_ID_EVENT_CORE          0
 

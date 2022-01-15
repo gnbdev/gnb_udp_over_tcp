@@ -98,11 +98,8 @@ static int service_listen_cb(gnb_network_service_t *service){
 
 
 static int service_connect_cb(gnb_network_service_t *service, gnb_connection_t *conn){
-
     GNB_LOG1(service->log, GNB_LOG_ID_UOT, "connect %s successed!\n", GNB_SOCKETADDRSTR1(&conn->remote_sockaddress));
-
     return 0;
-
 }
 
 
@@ -198,13 +195,9 @@ static void handle_udp(gnb_network_service_t *service, uot_channel_t *channel){
     }
 
     gnb_payload16_t  *payload16;
-
     payload16 = (gnb_payload16_t  *)tcp_conn->send_zbuf->las;
-
     gnb_payload16_set_data_len(payload16,recv_len);
-
     payload16->type = GNB_PAYLOAD_TYPE_UDP_OVER_TCP;
-
     memcpy(payload16->data, udp_conn->recv_zbuf->pos, recv_len);
 
     tcp_conn->send_zbuf->las += gnb_payload16_size(payload16);
@@ -289,13 +282,10 @@ static int service_send_cb(gnb_network_service_t *service, gnb_connection_t *con
 static int service_close_cb(gnb_network_service_t *service, gnb_connection_t *conn){
 
     uot_udp_service_ctx_t *service_ctx = (uot_udp_service_ctx_t *)service->ctx;
-
     uot_channel_t *channel = NULL;
 
     channel = (uot_channel_t *)conn->udata;
-
     gnb_connection_release(service, channel->tcp_conn);
-
     channel->tcp_conn = NULL;
 
     return 0;
@@ -317,13 +307,10 @@ static void send_keepalive_frame(gnb_network_service_t *service, gnb_connection_
     payload16 = (gnb_payload16_t  *)tcp_conn->send_zbuf->las;
 
     payload16->type = GNB_PAYLOAD_TYPE_TCP_KEEPALIVE;
-
     gnb_payload16_set_data_len(payload16, sizeof(uot_keepalive_frame_t) );
 
     uot_keepalive_frame = (uot_keepalive_frame_t *)payload16->data;
-
     uot_keepalive_frame->src_ts_usec = gnb_htonll(service->now_time_sec);
-
     snprintf(uot_keepalive_frame->text, 16, "keepalive");
 
     tcp_conn->send_zbuf->las += gnb_payload16_size(payload16);

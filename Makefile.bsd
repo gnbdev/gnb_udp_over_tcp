@@ -1,30 +1,25 @@
-CFLAGS= -I./src
+CFLAGS=-I./src
 
-LDFLAGS=-lwsock32 -lws2_32 -lmingwex
+GNB_UDP_OVER_TCP=gnb_udp_over_tcp
 
-GNB_UDP_OVER_TCP=gnb_udp_over_tcp.exe
+include Makefile.inc
 
-
-include makefile.inc
-
-
+GNB_EVENT_OBJS += ./src/event/kqueue_event_handler.o
 GNB_EVENT_OBJS += ./src/event/select_event_handler.o
 
-
 all:$(GNB_UDP_OVER_TCP)
-	mkdir -p ./bin/
-	cp $(GNB_UDP_OVER_TCP) ./bin/
-
 
 $(GNB_UDP_OVER_TCP): $(GNB_UDP_OVER_TCP_OBJS) $(GNB_EVENT_OBJS)
-	$(CC) -o ${GNB_UDP_OVER_TCP} $(GNB_UDP_OVER_TCP_OBJS) $(GNB_EVENT_OBJS) $(LDFLAGS)
+	$(CC) -o ${GNB_UDP_OVER_TCP} $(GNB_UDP_OVER_TCP_OBJS) $(GNB_EVENT_OBJS)
 
 
 %.o:%.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+
 clean:
 	rm -f ./src/*.o
+	rm -f ./libs/hash/*.o
 	rm -f ./src/service/*.o ./src/event/*.o
 	rm -f $(GNB_UDP_OVER_TCP)
 	rm -f core
